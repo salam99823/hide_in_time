@@ -20,6 +20,25 @@ class Align(Enum):
 
 
 class Widget:
+    """
+    Base widget class
+
+    ## Example
+
+    ```python
+    class Layer(Widget):
+        def __init__(
+            self,
+            parent: Rect,
+            childs: List[Widget],
+            align: Optional[Align] = None,
+            outline: Optional[tuple[ColorValue, int]] = None,
+            **_,
+        ) -> None:
+            super().__init__(parent, parent, childs=childs, align=align, outline=outline)
+    ```
+    """
+
     rect: Rect
     parent: Rect
     childs: List[Widget]
@@ -84,6 +103,9 @@ class Widget:
         self.background = color
 
     def focus(self, pos: Optional[tuple[int, int]] = None):
+        """
+        Sets widget focused if given point collides widget rect
+        """
         if pos and self.rect:
             self.focused = self.rect.collidepoint(*pos)
             if self.focused:
@@ -91,6 +113,7 @@ class Widget:
                     child.focus(pos)
 
     def draw(self, screen: Surface):
+        "Draws widget and his childs on given surface"
         if self.background:
             draw.rect(screen, self.background, self.rect)
         if self.outline:
@@ -104,6 +127,41 @@ WidgetType = TypeVar("WidgetType", bound=Widget)
 
 @dataclass
 class WidgetBuilder(Generic[WidgetType]):
+    """
+    Generic widget builder
+
+    ## Example
+
+    ```python
+    scenes = {
+        GameState.MENU: Scene(
+            [
+                WidgetBuilder(
+                    Layer,
+                    childs=[
+                        WidgetBuilder(
+                            Widget,
+                            Rect(0, 0, 300, 300),
+                            childs=[
+                                WidgetBuilder(
+                                    Widget,
+                                    Rect(0, 0, 100, 100),
+                                    align=Align.RIGHT,
+                                    outline=("Blue", 5),
+                                )
+                            ],
+                            align=Align.CENTER,
+                            outline=("Green", 5),
+                        )
+                    ],
+                    outline=("Red", 5),
+                )
+            ]
+        )
+    }
+    ```
+    """
+
     widget_class: Type[WidgetType]
     rect: Optional[Rect] = None
     childs: Optional[List[WidgetBuilder]] = None
