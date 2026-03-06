@@ -25,7 +25,7 @@ class Widget:
     parent: Rect
     childs: List[Widget]
     align: Optional[Align]
-    marigin: int = 1
+    margin: int = 1
     padding: int = 0
     background: Optional[ColorValue] = None
     outline: Optional[tuple[ColorValue, int]] = None
