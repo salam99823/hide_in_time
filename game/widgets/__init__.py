@@ -19,20 +19,63 @@ class Align(Enum):
     BOTTOMRIGHT = BOTTOM | RIGHT
 
 
-@dataclass
 class Widget:
     rect: Rect
     parent: Rect
     childs: List[Widget]
-    align: Optional[Align]
-    margin: int = 1
-    padding: int = 0
-    background: Optional[ColorValue] = None
-    outline: Optional[tuple[ColorValue, int]] = None
+    margin: int
+    padding: int
+    align: Optional[Align] = None
+    background: Optional[ColorValue]
+    outline: Optional[tuple[ColorValue, int]]
     focused: bool = False
+
+    def __init__(
+        self,
+        rect: Rect,
+        parent: Rect,
+        childs: List[Widget],
+        align: Optional[Align],
+        margin: int = 1,
+        padding: int = 0,
+        background: Optional[ColorValue] = None,
+        outline: Optional[tuple[ColorValue, int]] = None,
+    ) -> None:
+        self.rect = rect
+        self.parent = parent
+        self.childs = childs
+        if align:
+            self.set_align(align)
+        self.margin = margin
+        self.padding = padding
+        self.background = background
+        self.outline = outline
 
     def set_align(self, align: Align):
         self.align = align
+        match self.align:
+            case Align.CENTER:
+                self.rect.center = self.parent.center
+            case Align.TOP:
+                self.rect.top = self.parent.top
+                self.rect.centerx = self.parent.centerx
+            case Align.BOTTOM:
+                self.rect.bottom = self.parent.bottom
+                self.rect.centerx = self.parent.centerx
+            case Align.LEFT:
+                self.rect.left = self.parent.left
+                self.rect.centery = self.parent.centery
+            case Align.RIGHT:
+                self.rect.right = self.parent.right
+                self.rect.centery = self.parent.centery
+            case Align.TOPLEFT:
+                self.rect.topleft = self.parent.topleft
+            case Align.BOTTOMLEFT:
+                self.rect.bottomleft = self.parent.bottomleft
+            case Align.TOPRIGHT:
+                self.rect.topright = self.parent.topright
+            case Align.BOTTOMRIGHT:
+                self.rect.bottomright = self.parent.bottomright
 
     def set_outline(self, color: ColorValue, width: int):
         self.outline = (color, width)
@@ -48,18 +91,6 @@ class Widget:
                     child.focus(pos)
 
     def draw(self, screen: Surface):
-        match self.align:
-            case Align.CENTER:
-                self.rect.center = self.parent.center
-            case Align.TOP:
-                self.rect.top = self.parent.top
-            case Align.BOTTOM:
-                self.rect.bottom = self.parent.bottom
-            case Align.LEFT:
-                self.rect.left = self.parent.left
-            case Align.RIGHT:
-                self.rect.right = self.parent.right
-
         if self.background:
             draw.rect(screen, self.background, self.rect)
         if self.outline:
