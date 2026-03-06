@@ -1,8 +1,11 @@
 from enum import Enum
 
+from pygame import Rect
+
 from .app import App
 from .scene import Scene
-from .widgets import WidgetBuilder
+from .widgets import Align, El, Widget
+from .widgets.box import VBox
 from .widgets.layer import Layer
 
 
@@ -15,6 +18,37 @@ class GameState(Enum):
 
 class Game(App):
     def __init__(self) -> None:
-        scenes = {GameState.MENU: Scene([WidgetBuilder(Layer, outline=("Red", 5))])}
+        scenes = {
+            GameState.MENU: Scene(
+                [
+                    Layer(
+                        [
+                            VBox(
+                                Rect(0, 0, 300, 300),
+                                align=Align.TOP,
+                                childs=[
+                                    El(
+                                        Widget,
+                                        rect=Rect(0, 0, 100, 100),
+                                        background="Red",
+                                    ),
+                                    El(
+                                        Widget,
+                                        Rect(0, 0, 100, 100),
+                                        background="Green",
+                                    ),
+                                    El(
+                                        Widget,
+                                        Rect(0, 0, 100, 100),
+                                        background="Blue",
+                                    ),
+                                ],
+                            )
+                        ],
+                        outline=("Red", 5),
+                    )
+                ]
+            )
+        }
         state = GameState.MENU
         super().__init__(scenes, state)

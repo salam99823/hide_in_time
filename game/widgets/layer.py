@@ -1,18 +1,12 @@
-from typing import List, Optional
+from typing import List
 
-from pygame import Rect
-
-from game.types import ColorValue
-from game.widgets import Align, Widget
+from . import WidgetBuilder
+from .box import Box
 
 
-class Layer(Widget):
-    def __init__(
-        self,
-        parent: Rect,
-        childs: List[Widget],
-        align: Optional[Align] = None,
-        outline: Optional[tuple[ColorValue, int]] = None,
-        **_,
-    ) -> None:
-        super().__init__(parent, parent, childs=childs, align=align, outline=outline)
+class LayerWidget(Box):
+    pass
+
+
+def Layer(childs: List[WidgetBuilder], *args, **kwargs) -> WidgetBuilder[LayerWidget]:
+    return WidgetBuilder(LayerWidget, *args, childs=childs, **kwargs)

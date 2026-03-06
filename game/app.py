@@ -25,23 +25,23 @@ class App:
         self.scenes = scenes
         self.state = state
 
-    def scene(self) -> Scene:
-        return self.scenes[self.state]
-
     def run(self):
         self.screen = pygame.display.set_mode((500, 200), self.flags)
         self.running = True
         self.clock = Clock()
+        for scene in self.scenes.values():
+            scene.set_screen(self.screen)
         while self.running:
-            scene = self.scene()
-            scene.draw(self.screen)
+            scene = self.scenes[self.state]
+            scene.draw()
             pygame.display.flip()
             for event in pygame.event.get():
                 match event.type:
                     case pygame.QUIT:
                         self.running = False
                     case pygame.VIDEORESIZE | pygame.VIDEOEXPOSE:
-                        scene.draw(self.screen)
+                        scene.set_screen(self.screen)
+                        scene.draw()
                         pygame.display.flip()
                     case _:
                         yield event

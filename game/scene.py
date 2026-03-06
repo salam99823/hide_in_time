@@ -4,15 +4,15 @@ import pygame
 from pygame import Surface
 from pygame.event import Event
 
-from game.widgets.layer import Layer
-
 from .types import ColorValue, KeyCode, KeyHandler
 from .widgets import WidgetBuilder
+from .widgets.layer import LayerWidget
 
 
 class Scene:
-    layers: List[WidgetBuilder[Layer]]
-    _layers: List[Layer]
+    layers: List[WidgetBuilder[LayerWidget]]
+    screen: Optional[Surface]
+    _layers: List[LayerWidget]
     shortcuts: dict[KeyCode, KeyHandler]
 
     def __init__(
@@ -32,6 +32,11 @@ class Scene:
         else:
             self.shortcuts = {}
 
+    def set_screen(self, screen: Surface):
+        self.screen = screen
+        rect = screen.get_rect()
+        self._layers = [layer.build(rect) for layer in self.layers]
+
     def handle_event(self, event: Event):
         match event.type:
             case pygame.KEYDOWN | pygame.KEYUP:
@@ -42,11 +47,9 @@ class Scene:
                 for widget in self._layers:
                     widget.focus(event.pos)
 
-    def draw(self, screen: Surface):
-        screen.fill(self.background)
-        screen_rect = screen.get_rect()
-        self._layers.clear()
-        for widget in self.layers:
-            widget = widget.build(screen_rect)
-            self._layers.append(widget)
-            widget.draw(screen)
+    def draw(self):
+        if not self.screen:
+            return
+        self.screen.fill(self.background)
+        for widget in self._layers:
+            widget.draw(self.screen)

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar
+from typing import Dict, Generic, Optional, Tuple, Type, TypeVar
 
 from pygame import Rect, Surface, draw
 
@@ -42,8 +42,7 @@ class Widget:
     parent: Rect
     margin: Rect
     padding: Rect
-    childs: List[Widget]
-    align: Optional[Align] = None
+    align: Align = Align.CENTER
     background: Optional[ColorValue]
     outline: Optional[tuple[ColorValue, int]]
     focused: bool = False
@@ -54,14 +53,12 @@ class Widget:
         parent: Rect,
         margin: Rect,
         padding: Rect,
-        childs: List[Widget],
-        align: Optional[Align],
+        align: Optional[Align] = None,
         background: Optional[ColorValue] = None,
         outline: Optional[tuple[ColorValue, int]] = None,
     ) -> None:
         self.rect = rect
         self.parent = parent
-        self.childs = childs
         if margin:
             self.margin = margin
         else:
@@ -74,11 +71,6 @@ class Widget:
             self.align = align
         self.background = background
         self.outline = outline
-
-    def __setattr__(self, name: str, value: Any, /) -> None:
-        super().__setattr__(name, value)
-        if name == "align":
-            self.realign()
 
     def realign(self):
         deltax = self.margin.centerx - self.rect.centerx
@@ -112,8 +104,6 @@ class Widget:
             self.margin.centerx + deltax2,
             self.margin.centery + deltay2,
         )
-        for child in self.childs:
-            child.realign()
 
     def set_outline(self, color: ColorValue, width: int):
         self.outline = (color, width)
@@ -126,18 +116,15 @@ class Widget:
         Sets widget focused if given point collides widget rect
         """
         self.focused = self.rect.collidepoint(*pos)
-        if self.focused:
-            for child in self.childs:
-                child.focus(pos)
 
     def draw(self, screen: Surface):
         "Draws widget and his childs on given surface"
         if self.background:
             draw.rect(screen, self.background, self.rect)
+        draw.rect(screen, "Orange", self.margin, 4)
+        draw.rect(screen, "Pink", self.padding, 4)
         if self.outline:
             draw.rect(screen, self.outline[0], self.rect, self.outline[1])
-        for child in self.childs:
-            child.draw(screen)
 
 
 WidgetType = TypeVar("WidgetType", bound=Widget)
@@ -184,13 +171,7 @@ class WidgetBuilder(Generic[WidgetType]):
     """
 
     widget_class: Type[WidgetType]
-    rect: Optional[Rect] = None
-    margin: Optional[Rect] = None
-    padding: Optional[Rect] = None
-    childs: Optional[List[WidgetBuilder]] = None
-    align: Optional[Align] = None
-    background: Optional[ColorValue] = None
-    outline: Optional[Tuple[ColorValue, int]] = None
+    args: Tuple
     kwargs: Dict
 
     def __init__(
@@ -199,7 +180,6 @@ class WidgetBuilder(Generic[WidgetType]):
         rect: Optional[Rect] = None,
         margin: Optional[Rect] = None,
         padding: Optional[Rect] = None,
-        childs: Optional[List[WidgetBuilder]] = None,
         align: Optional[Align] = None,
         background: Optional[ColorValue] = None,
         outline: Optional[Tuple[ColorValue, int]] = None,
@@ -210,7 +190,6 @@ class WidgetBuilder(Generic[WidgetType]):
         self.rect = rect
         self.margin = margin
         self.padding = padding
-        self.childs = childs
         self.align = align
         self.background = background
         self.outline = outline
@@ -219,18 +198,15 @@ class WidgetBuilder(Generic[WidgetType]):
     def build(self, parent: Rect):
         rect = self.rect if self.rect else parent
         margin = self.margin if self.margin else rect
-        content_rect = self.padding if self.padding else rect
-        childs = (
-            [child.build(content_rect) for child in self.childs] if self.childs else []
-        )
-        return self.widget_class(
+        padding = self.padding if self.padding else rect
+        widget = self.widget_class(
             rect=rect,
             parent=parent,
             margin=margin,
-            padding=content_rect,
-            childs=childs,
-            align=self.align,
+            padding=padding,
             background=self.background,
             outline=self.outline,
             **self.kwargs,
         )
+        widget.realign()
+        return widget
