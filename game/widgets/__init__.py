@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Generic, Optional, Tuple, Type, TypeVar
+from typing import Generic, Optional, Tuple, Type, TypeVar
 
 from pygame import Rect, Surface, draw
 
@@ -21,28 +21,13 @@ class Align(Enum):
 class Widget:
     """
     Base widget class
-
-    ## Example
-
-    ```python
-    class Layer(Widget):
-        def __init__(
-            self,
-            parent: Rect,
-            childs: List[Widget],
-            align: Optional[Align] = None,
-            outline: Optional[tuple[ColorValue, int]] = None,
-            **_,
-        ) -> None:
-            super().__init__(parent, parent, childs=childs, align=align, outline=outline)
-    ```
     """
 
-    rect: Rect
+    outer_rect: Rect
     parent: Rect
-    margin: Rect
-    padding: Rect
-    align: Align = Align.CENTER
+    maximize: Tuple[bool, bool]
+    margin: Tuple[int, int, int, int] = (0, 0, 0, 0)
+    padding: Tuple[int, int, int, int] = (0, 0, 0, 0)
     background: Optional[ColorValue]
     outline: Optional[tuple[ColorValue, int]]
     focused: bool = False
@@ -51,58 +36,44 @@ class Widget:
         self,
         rect: Rect,
         parent: Rect,
-        margin: Rect,
-        padding: Rect,
-        align: Optional[Align] = None,
+        maximize: Tuple[bool, bool],
+        margin: Tuple[int, int, int, int],
+        padding: Tuple[int, int, int, int],
         background: Optional[ColorValue] = None,
         outline: Optional[tuple[ColorValue, int]] = None,
     ) -> None:
-        self.rect = rect
         self.parent = parent
+        self.maximize = maximize
         if margin:
             self.margin = margin
-        else:
-            self.margin = rect
+        self.outer_rect = Rect(
+            rect.x - self.margin[0],
+            rect.y - self.margin[1],
+            rect.width + self.margin[2],
+            rect.height + self.margin[3],
+        )
         if padding:
             self.padding = padding
-        else:
-            self.padding = rect
-        if align:
-            self.align = align
         self.background = background
         self.outline = outline
 
-    def realign(self):
-        deltax = self.margin.centerx - self.rect.centerx
-        deltay = self.margin.centery - self.rect.centery
-        deltax2 = self.margin.centerx - self.padding.centerx
-        deltay2 = self.margin.centery - self.padding.centery
-        match self.align:
-            case Align.CENTER:
-                self.margin.center = self.parent.center
-            case Align.TOP:
-                self.margin.midtop = self.parent.midtop
-            case Align.BOTTOM:
-                self.margin.midbottom = self.parent.midbottom
-            case Align.LEFT:
-                self.margin.midleft = self.parent.midleft
-            case Align.RIGHT:
-                self.margin.midright = self.parent.midright
-            case Align.TOPLEFT:
-                self.margin.topleft = self.parent.topleft
-            case Align.BOTTOMLEFT:
-                self.margin.bottomleft = self.parent.bottomleft
-            case Align.TOPRIGHT:
-                self.margin.topright = self.parent.topright
-            case Align.BOTTOMRIGHT:
-                self.margin.bottomright = self.parent.bottomright
-        self.rect.center = (
-            self.margin.centerx + deltax,
-            self.margin.centery + deltay,
+    def get_rect(self) -> Rect:
+        margin = self.margin
+        return Rect(
+            self.outer_rect.x + margin[0],
+            self.outer_rect.y + margin[1],
+            self.outer_rect.width - margin[2],
+            self.outer_rect.height - margin[3],
         )
-        self.padding.center = (
-            self.margin.centerx + deltax2,
-            self.margin.centery + deltay2,
+
+    def get_inner_rect(self) -> Rect:
+        padding = self.padding
+        rect = self.get_rect()
+        return Rect(
+            rect.x + padding[0],
+            rect.y + padding[1],
+            rect.width - padding[2],
+            rect.height - padding[3],
         )
 
     def set_outline(self, color: ColorValue, width: int):
@@ -115,16 +86,17 @@ class Widget:
         """
         Sets widget focused if given point collides widget rect
         """
-        self.focused = self.rect.collidepoint(*pos)
+        self.focused = self.outer_rect.collidepoint(*pos)
 
     def draw(self, screen: Surface):
         "Draws widget and his childs on given surface"
+        rect = self.get_rect()
         if self.background:
-            draw.rect(screen, self.background, self.rect)
-        draw.rect(screen, "Orange", self.margin, 4)
-        draw.rect(screen, "Pink", self.padding, 4)
+            draw.rect(screen, self.background, rect)
+        draw.rect(screen, "Orange", self.outer_rect, 4)
+        draw.rect(screen, "Pink", self.get_inner_rect(), 2)
         if self.outline:
-            draw.rect(screen, self.outline[0], self.rect, self.outline[1])
+            draw.rect(screen, self.outline[0], rect, self.outline[1])
 
 
 WidgetType = TypeVar("WidgetType", bound=Widget)
@@ -143,44 +115,42 @@ class WidgetBuilder(Generic[WidgetType]):
     ```python
     scenes = {
         GameState.MENU: Scene(
-            [
+            (
                 WidgetBuilder(
                     Layer,
-                    childs=[
+                    childs=(
                         WidgetBuilder(
                             Widget,
                             Rect(0, 0, 300, 300),
-                            childs=[
+                            childs=(
                                 WidgetBuilder(
                                     Widget,
                                     Rect(0, 0, 100, 100),
                                     align=Align.RIGHT,
                                     outline=("Blue", 5),
                                 )
-                            ],
+                            ),
                             align=Align.CENTER,
                             outline=("Green", 5),
                         )
-                    ],
+                    ),
                     outline=("Red", 5),
                 )
-            ]
+            )
         )
     }
     ```
     """
 
     widget_class: Type[WidgetType]
-    args: Tuple
-    kwargs: Dict
 
     def __init__(
         self,
         widget_class: Type[WidgetType],
         rect: Optional[Rect] = None,
-        margin: Optional[Rect] = None,
-        padding: Optional[Rect] = None,
-        align: Optional[Align] = None,
+        maximize: Tuple[bool, bool] = (False, False),
+        margin: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        padding: Tuple[int, int, int, int] = (0, 0, 0, 0),
         background: Optional[ColorValue] = None,
         outline: Optional[Tuple[ColorValue, int]] = None,
         **kwargs,
@@ -188,25 +158,24 @@ class WidgetBuilder(Generic[WidgetType]):
         super().__init__()
         self.widget_class = widget_class
         self.rect = rect
+        self.maximize = maximize
         self.margin = margin
         self.padding = padding
-        self.align = align
         self.background = background
         self.outline = outline
         self.kwargs = kwargs
 
     def build(self, parent: Rect):
         rect = self.rect if self.rect else parent
-        margin = self.margin if self.margin else rect
-        padding = self.padding if self.padding else rect
-        widget = self.widget_class(
+        if not self.rect:
+            self.maximize = (True, True)
+        return self.widget_class(
             rect=rect,
             parent=parent,
-            margin=margin,
-            padding=padding,
+            maximize=self.maximize,
+            margin=self.margin,
+            padding=self.padding,
             background=self.background,
             outline=self.outline,
             **self.kwargs,
         )
-        widget.realign()
-        return widget

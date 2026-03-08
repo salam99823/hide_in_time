@@ -2,10 +2,12 @@ from enum import Enum
 
 from pygame import Rect
 
+from game.widgets.text import Text
+
 from .app import App
 from .scene import Scene
 from .widgets import Align, El, Widget
-from .widgets.box import VBox
+from .widgets.box import HBox, VBox
 from .widgets.layer import Layer
 
 
@@ -20,16 +22,37 @@ class Game(App):
     def __init__(self) -> None:
         scenes = {
             GameState.MENU: Scene(
-                [
+                (
                     Layer(
-                        [
-                            VBox(
-                                Rect(0, 0, 300, 300),
-                                align=Align.TOP,
-                                childs=[
+                        (
+                            HBox(
+                                Rect(0, 0, 1000, 100),
+                                maximize=(True, False),
+                                align_items=Align.TOP,
+                                childs=(
                                     El(
                                         Widget,
-                                        rect=Rect(0, 0, 100, 100),
+                                        maximize=(True, False),
+                                        background="Red",
+                                    ),
+                                    El(
+                                        Widget,
+                                        Rect(0, 0, 100, 100),
+                                        background="Green",
+                                    ),
+                                    El(
+                                        Widget,
+                                        maximize=(True, False),
+                                        background="Blue",
+                                    ),
+                                ),
+                            ),
+                            VBox(
+                                maximize=(True, True),
+                                childs=(
+                                    El(
+                                        Widget,
+                                        Rect(0, 0, 100, 100),
                                         background="Red",
                                     ),
                                     El(
@@ -42,12 +65,35 @@ class Game(App):
                                         Rect(0, 0, 100, 100),
                                         background="Blue",
                                     ),
-                                ],
-                            )
-                        ],
+                                ),
+                            ),
+                            HBox(
+                                Rect(0, 0, 1000, 200),
+                                maximize=(True, False),
+                                # align_items=Align.BOTTOM,
+                                childs=(
+                                    El(
+                                        Widget,
+                                        Rect(0, 0, 100, 100),
+                                        background="Red",
+                                    ),
+                                    El(
+                                        Widget,
+                                        Rect(0, 0, 100, 100),
+                                        background="Green",
+                                    ),
+                                    El(
+                                        Widget,
+                                        Rect(0, 0, 100, 100),
+                                        background="Blue",
+                                    ),
+                                ),
+                            ),
+                        ),
+                        align_items=Align.BOTTOM,
                         outline=("Red", 5),
-                    )
-                ]
+                    ),
+                )
             )
         }
         state = GameState.MENU

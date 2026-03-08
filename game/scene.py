@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 import pygame
 from pygame import Surface
@@ -10,14 +10,14 @@ from .widgets.layer import LayerWidget
 
 
 class Scene:
-    layers: List[WidgetBuilder[LayerWidget]]
+    layers: Tuple[WidgetBuilder[LayerWidget], ...]
     screen: Optional[Surface]
-    _layers: List[LayerWidget]
+    _layers: Tuple[LayerWidget, ...]
     shortcuts: dict[KeyCode, KeyHandler]
 
     def __init__(
         self,
-        layers: Optional[list[WidgetBuilder]] = None,
+        layers: Optional[Tuple[WidgetBuilder]] = None,
         shortcuts=None,
         background: ColorValue = "White",
     ) -> None:
@@ -25,8 +25,8 @@ class Scene:
         if layers:
             self.layers = layers
         else:
-            self.layers = []
-        self._layers = []
+            self.layers = tuple()
+        self._layers = tuple()
         if shortcuts:
             self.shortcuts = shortcuts
         else:
@@ -35,7 +35,7 @@ class Scene:
     def set_screen(self, screen: Surface):
         self.screen = screen
         rect = screen.get_rect()
-        self._layers = [layer.build(rect) for layer in self.layers]
+        self._layers = tuple(layer.build(rect) for layer in self.layers)
 
     def handle_event(self, event: Event):
         match event.type:

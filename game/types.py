@@ -1,10 +1,10 @@
 from typing import Callable, Sequence, Tuple, Union
 
-from pygame import KEYDOWN, KEYUP, Color
+from pygame import Color
 
 RGBAOutput = Tuple[int, int, int, int]
 ColorValue = Union[Color, int, str, Tuple[int, int, int], RGBAOutput, Sequence[int]]
 KeyCode = int
 EventType = int
-KeyEventType = KEYDOWN | KEYUP
+KeyEventType = int
 KeyHandler = Union[Callable[[KeyEventType], None], None]
