@@ -28,8 +28,8 @@ class Widget:
     maximize: Tuple[bool, bool]
     margin: Tuple[int, int, int, int] = (0, 0, 0, 0)
     padding: Tuple[int, int, int, int] = (0, 0, 0, 0)
+    border: Optional[tuple[ColorValue, int]]
     background: Optional[ColorValue]
-    outline: Optional[tuple[ColorValue, int]]
     focused: bool = False
 
     def __init__(
@@ -39,11 +39,13 @@ class Widget:
         maximize: Tuple[bool, bool],
         margin: Tuple[int, int, int, int],
         padding: Tuple[int, int, int, int],
+        border: Optional[tuple[ColorValue, int]] = None,
         background: Optional[ColorValue] = None,
-        outline: Optional[tuple[ColorValue, int]] = None,
     ) -> None:
         self.parent = parent
         self.maximize = maximize
+        self.border = border
+        self.background = background
         if margin:
             self.margin = margin
         self.outer_rect = Rect(
@@ -52,19 +54,30 @@ class Widget:
             rect.width + self.margin[2],
             rect.height + self.margin[3],
         )
+        if border:
+            border_width = border[1]
+            self.outer_rect.x -= border_width
+            self.outer_rect.y -= border_width
+            self.outer_rect.width += border_width
+            self.outer_rect.height += border_width
         if padding:
             self.padding = padding
-        self.background = background
-        self.outline = outline
 
     def get_rect(self) -> Rect:
         margin = self.margin
-        return Rect(
+        rect = Rect(
             self.outer_rect.x + margin[0],
             self.outer_rect.y + margin[1],
             self.outer_rect.width - margin[2],
             self.outer_rect.height - margin[3],
         )
+        if self.border:
+            border_width = self.border[1]
+            rect.x += border_width
+            rect.y += border_width
+            rect.width -= border_width
+            rect.height -= border_width
+        return rect
 
     def get_inner_rect(self) -> Rect:
         padding = self.padding
@@ -77,7 +90,7 @@ class Widget:
         )
 
     def set_outline(self, color: ColorValue, width: int):
-        self.outline = (color, width)
+        self.border = (color, width)
 
     def set_background(self, color: ColorValue):
         self.background = color
@@ -95,8 +108,8 @@ class Widget:
             draw.rect(screen, self.background, rect)
         draw.rect(screen, "Orange", self.outer_rect, 4)
         draw.rect(screen, "Pink", self.get_inner_rect(), 2)
-        if self.outline:
-            draw.rect(screen, self.outline[0], rect, self.outline[1])
+        if self.border:
+            draw.rect(screen, self.border[0], rect, self.border[1])
 
 
 WidgetType = TypeVar("WidgetType", bound=Widget)
@@ -152,7 +165,7 @@ class WidgetBuilder(Generic[WidgetType]):
         margin: Tuple[int, int, int, int] = (0, 0, 0, 0),
         padding: Tuple[int, int, int, int] = (0, 0, 0, 0),
         background: Optional[ColorValue] = None,
-        outline: Optional[Tuple[ColorValue, int]] = None,
+        border: Optional[Tuple[ColorValue, int]] = None,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -162,7 +175,7 @@ class WidgetBuilder(Generic[WidgetType]):
         self.margin = margin
         self.padding = padding
         self.background = background
-        self.outline = outline
+        self.border = border
         self.kwargs = kwargs
 
     def build(self, parent: Rect):
@@ -176,6 +189,6 @@ class WidgetBuilder(Generic[WidgetType]):
             margin=self.margin,
             padding=self.padding,
             background=self.background,
-            outline=self.outline,
+            border=self.border,
             **self.kwargs,
         )
