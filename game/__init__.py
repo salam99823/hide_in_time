@@ -1,13 +1,14 @@
 from enum import Enum
 
-from pygame import Rect
-
-from game.widgets.text import Text
+import pygame
+from pygame import QUIT, Rect
+from pygame.event import Event
 
 from .app import App
 from .scene import Scene
-from .widgets import Align, El, Widget
-from .widgets.box import HBox, VBox
+from .widgets import button
+from .widgets.box import VBox
+from .widgets.button import Button
 from .widgets.layer import Layer
 
 
@@ -18,6 +19,12 @@ class GameState(Enum):
     SETTINGS = 0b100 | PAUSE
 
 
+class MenuButton(Enum):
+    PLAY_BUTTON = 0
+    SETTINGS_BUTTON = 1
+    EXIT_BUTTON = 2
+
+
 class Game(App):
     def __init__(self) -> None:
         scenes = {
@@ -25,76 +32,53 @@ class Game(App):
                 (
                     Layer(
                         (
-                            HBox(
-                                Rect(0, 0, 1000, 100),
-                                maximize=(True, False),
-                                align_items=Align.TOP,
-                                childs=(
-                                    El(
-                                        Widget,
-                                        maximize=(True, False),
-                                        background="Red",
-                                    ),
-                                    El(
-                                        Widget,
-                                        Rect(0, 0, 100, 100),
-                                        background="Green",
-                                    ),
-                                    El(
-                                        Widget,
-                                        maximize=(True, False),
-                                        background="Blue",
-                                    ),
-                                ),
-                            ),
                             VBox(
                                 maximize=(True, True),
                                 childs=(
-                                    El(
-                                        Widget,
-                                        Rect(0, 0, 100, 100),
-                                        background="Red",
+                                    Button(
+                                        "Play",
+                                        MenuButton.PLAY_BUTTON,
+                                        Rect(0, 0, 300, 100),
+                                        border=("Red", 3),
                                     ),
-                                    El(
-                                        Widget,
-                                        Rect(0, 0, 100, 100),
-                                        background="Green",
+                                    Button(
+                                        "Settings",
+                                        MenuButton.SETTINGS_BUTTON,
+                                        Rect(0, 0, 300, 100),
+                                        border=("Red", 3),
                                     ),
-                                    El(
-                                        Widget,
-                                        Rect(0, 0, 100, 100),
-                                        background="Blue",
-                                    ),
-                                ),
-                            ),
-                            HBox(
-                                Rect(0, 0, 1000, 200),
-                                maximize=(True, False),
-                                # align_items=Align.BOTTOM,
-                                childs=(
-                                    El(
-                                        Widget,
-                                        Rect(0, 0, 100, 100),
-                                        background="Red",
-                                    ),
-                                    El(
-                                        Widget,
-                                        Rect(0, 0, 100, 100),
-                                        background="Green",
-                                    ),
-                                    El(
-                                        Widget,
-                                        Rect(0, 0, 100, 100),
-                                        background="Blue",
+                                    Button(
+                                        "Exit",
+                                        MenuButton.EXIT_BUTTON,
+                                        Rect(0, 0, 200, 100),
+                                        border=("Red", 3),
                                     ),
                                 ),
                             ),
                         ),
-                        align_items=Align.BOTTOM,
-                        outline=("Red", 5),
                     ),
+                ),
+            ),
+            GameState.INGAME: Scene(
+                (
+                    # Layer(
+                    # ),
                 )
-            )
+            ),
         }
         state = GameState.MENU
         super().__init__(scenes, state)
+
+    def run(self):
+        for event in super().run():
+            match event.type:
+                case button.BUTTONUP:
+                    match event.button_id:
+                        case MenuButton.PLAY_BUTTON:
+                            self.state = GameState.INGAME
+                            scene = self.scenes[self.state]
+                            scene.set_screen(self.screen)
+                        case MenuButton.EXIT_BUTTON:
+                            pygame.event.post(Event(QUIT))
+                case _:
+                    yield event

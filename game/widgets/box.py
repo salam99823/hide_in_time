@@ -2,8 +2,21 @@ from enum import Enum
 from typing import Tuple
 
 from pygame import Surface
+from pygame.event import Event
 
-from . import Align, Widget, WidgetBuilder
+from . import Widget, WidgetBuilder
+
+
+class Align(Enum):
+    CENTER = 0
+    TOP = 1
+    BOTTOM = 2
+    LEFT = 4
+    RIGHT = 8
+    TOPLEFT = TOP | LEFT
+    BOTTOMLEFT = BOTTOM | LEFT
+    TOPRIGHT = TOP | RIGHT
+    BOTTOMRIGHT = BOTTOM | RIGHT
 
 
 class Direction(Enum):
@@ -106,25 +119,15 @@ class Box(Widget):
         width, height = self.content_size()
         match self.direction:
             case Direction.Horizontal:
-                match self.align_items:
-                    case Align.TOP | Align.BOTTOM:
-                        x = padding.centerx - width // 2
-                        if self.align_items == Align.BOTTOM:
-                            y = padding.bottom - height
-                    case Align.LEFT | Align.RIGHT:
-                        y = padding.centery - height // 2
-                        if self.align_items == Align.RIGHT:
-                            x = padding.right - width
-                    case Align.TOPRIGHT:
-                        x = padding.right - width
-                    case Align.BOTTOMRIGHT:
-                        y = padding.height - height
-                        x = padding.right - width
-                    case Align.BOTTOMLEFT:
-                        y = padding.bottom - height
-                    case Align.CENTER:
-                        x = padding.centerx - width // 2
-                        y = padding.centery - height // 2
+                if self.align_items.value & Align.BOTTOM.value:
+                    y += padding.height - height
+                elif not self.align_items.value & Align.TOP.value:  # CENTER
+                    y += (padding.height - height) // 2
+
+                if self.align_items.value & Align.RIGHT.value:
+                    x = padding.right - width
+                elif not self.align_items.value & Align.LEFT.value:  # CENTER
+                    x = padding.centerx - width // 2
 
                 first = self.childs[0].outer_rect
                 first.topleft = (x, y)
@@ -133,25 +136,15 @@ class Box(Widget):
                     child.outer_rect.midleft = midleft
                     midleft = child.outer_rect.midright
             case Direction.Vertical:
-                match self.align_items:
-                    case Align.TOP | Align.BOTTOM:
-                        x += (padding.right - width) // 2
-                        if self.align_items == Align.BOTTOM:
-                            y += padding.height - height
-                    case Align.LEFT | Align.RIGHT:
-                        y += (padding.height - height) // 2
-                        if self.align_items == Align.RIGHT:
-                            x += padding.width - width
-                    case Align.TOPRIGHT:
-                        x += padding.width - width
-                    case Align.BOTTOMRIGHT:
-                        y += padding.height - height
-                        x += padding.width - width
-                    case Align.BOTTOMLEFT:
-                        y += padding.height - height
-                    case Align.CENTER:
-                        x += (padding.width - width) // 2
-                        y += (padding.height - height) // 2
+                if self.align_items.value & Align.BOTTOM.value:
+                    y += padding.height - height
+                elif not self.align_items.value & Align.TOP.value:  # CENTER
+                    y += (padding.height - height) // 2
+
+                if self.align_items.value & Align.RIGHT.value:
+                    x = padding.right - width
+                elif not self.align_items.value & Align.LEFT.value:  # CENTER
+                    x = padding.centerx - width // 2
 
                 first = self.childs[0].outer_rect
                 first.topleft = (x, y)
@@ -163,11 +156,12 @@ class Box(Widget):
             if isinstance(child, Box):
                 child.realign_items()
 
-    def focus(self, pos: tuple[int, int]):
-        super().focus(pos)
-        if self.focused:
-            for child in self.childs:
-                child.focus(pos)
+    def handle_event(self, event: Event):
+        super().handle_event(event)
+        for child in self.childs:
+            if child.handle_event(event):
+                return True
+        return False
 
     def draw(self, screen: Surface):
         for child in self.childs:

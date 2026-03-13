@@ -44,7 +44,7 @@ class App:
                         scene.draw()
                         pygame.display.flip()
                     case _:
-                        yield event
-                        scene.handle_event(event)
+                        if not scene.handle_event(event):
+                            yield event
             self.clock.tick(self.fps)
         pygame.quit()

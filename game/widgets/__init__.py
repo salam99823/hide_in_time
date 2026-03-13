@@ -1,21 +1,11 @@
 from enum import Enum
 from typing import Generic, Optional, Tuple, Type, TypeVar
 
+import pygame
 from pygame import Rect, Surface, draw
+from pygame.event import Event
 
 from ..types import ColorValue
-
-
-class Align(Enum):
-    CENTER = 0
-    TOP = 1
-    BOTTOM = 2
-    LEFT = 4
-    RIGHT = 8
-    TOPLEFT = TOP | LEFT
-    BOTTOMLEFT = BOTTOM | LEFT
-    TOPRIGHT = TOP | RIGHT
-    BOTTOMRIGHT = BOTTOM | RIGHT
 
 
 class Widget:
@@ -30,7 +20,7 @@ class Widget:
     padding: Tuple[int, int, int, int] = (0, 0, 0, 0)
     border: Optional[tuple[ColorValue, int]]
     background: Optional[ColorValue]
-    focused: bool = False
+    howered: bool = False
 
     def __init__(
         self,
@@ -64,12 +54,8 @@ class Widget:
             self.padding = padding
 
     def get_rect(self) -> Rect:
-        margin = self.margin
-        rect = Rect(
-            self.outer_rect.x + margin[0],
-            self.outer_rect.y + margin[1],
-            self.outer_rect.width - margin[2],
-            self.outer_rect.height - margin[3],
+        rect = self.outer_rect.move(self.margin[0], self.margin[1]).inflate(
+            -self.margin[0] - self.margin[2], -self.margin[1] - self.margin[3]
         )
         if self.border:
             border_width = self.border[1]
@@ -95,28 +81,22 @@ class Widget:
     def set_background(self, color: ColorValue):
         self.background = color
 
-    def focus(self, pos: tuple[int, int]):
-        """
-        Sets widget focused if given point collides widget rect
-        """
-        self.focused = self.outer_rect.collidepoint(*pos)
+    def handle_event(self, event: Event) -> bool:
+        if event.type == pygame.MOUSEMOTION:
+            self.howered = self.outer_rect.collidepoint(*event.pos)
+            return self.howered
+        return False
 
     def draw(self, screen: Surface):
         "Draws widget and his childs on given surface"
         rect = self.get_rect()
         if self.background:
             draw.rect(screen, self.background, rect)
-        draw.rect(screen, "Orange", self.outer_rect, 4)
-        draw.rect(screen, "Pink", self.get_inner_rect(), 2)
         if self.border:
             draw.rect(screen, self.border[0], rect, self.border[1])
 
 
 WidgetType = TypeVar("WidgetType", bound=Widget)
-
-
-def El(cls: Type[WidgetType], *args, **kwargs) -> WidgetBuilder[WidgetType]:
-    return WidgetBuilder(cls, *args, **kwargs)
 
 
 class WidgetBuilder(Generic[WidgetType]):
